@@ -6,6 +6,7 @@ import (
 	"crypto/rand"
 	"crypto/sha256"
 	"encoding/hex"
+	"errors"
 	"flag"
 	"fmt"
 	"hash"
@@ -85,7 +86,7 @@ func main() {
 			log.Fatal(err)
 		}
 
-		signature, err := Sign(h.Sum(nil), privatekey)
+		signature, err := ecdsa.SignASN1(rand.Reader, privatekey, h.Sum(nil))
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -107,37 +108,78 @@ func main() {
 
 		sig, _ := hex.DecodeString(*sig)
 
-		verifystatus := Verify(h.Sum(nil), sig, pub)
+		verifystatus := ecdsa.VerifyASN1(pub, h.Sum(nil), sig)
 		fmt.Println(verifystatus)
 	}
 }
 
-func Verify(data, signature []byte, pubkey *ecdsa.PublicKey) bool {
-	digest := sha256.Sum256(data)
-
-	curveOrderByteSize := pubkey.Curve.Params().P.BitLen() / 8
-
-	r, s := new(big.Int), new(big.Int)
-	r.SetBytes(signature[:curveOrderByteSize])
-	s.SetBytes(signature[curveOrderByteSize:])
-
-	return ecdsa.Verify(pubkey, digest[:], r, s)
-}
-
-func Sign(data []byte, privkey *ecdsa.PrivateKey) ([]byte, error) {
-	digest := sha256.Sum256(data)
-
-	r, s, err := ecdsa.Sign(rand.Reader, privkey, digest[:])
+func ReadPrivateKeyFromHex(Dhex string) (*ecdsa.PrivateKey, error) {
+	c := elliptic.P256()
+	d, err := hex.DecodeString(Dhex)
 	if err != nil {
 		return nil, err
 	}
+	k := new(big.Int).SetBytes(d)
+	params := c.Params()
+	one := new(big.Int).SetInt64(1)
+	n := new(big.Int).Sub(params.N, one)
+	if k.Cmp(n) >= 0 {
+		return nil, errors.New("privateKey's D is overflow.")
+	}
+	priv := new(ecdsa.PrivateKey)
+	priv.PublicKey.Curve = c
+	priv.D = k
+	priv.PublicKey.X, priv.PublicKey.Y = c.ScalarBaseMult(k.Bytes())
+	return priv, nil
+}
 
-	params := privkey.Curve.Params()
-	curveOrderByteSize := params.P.BitLen() / 8
-	rBytes, sBytes := r.Bytes(), s.Bytes()
-	signature := make([]byte, curveOrderByteSize*2)
-	copy(signature[curveOrderByteSize-len(rBytes):], rBytes)
-	copy(signature[curveOrderByteSize*2-len(sBytes):], sBytes)
+func WritePrivateKeyToHex(key *ecdsa.PrivateKey) string {
+	return key.D.Text(16)
+}
 
-	return signature, nil
+func ReadPublicKeyFromHex(Qhex string) (*ecdsa.PublicKey, error) {
+	q, err := hex.DecodeString(Qhex)
+	if err != nil {
+		return nil, err
+	}
+	if len(q) == 65 && q[0] == byte(0x04) {
+		q = q[1:]
+	}
+	if len(q) != 64 {
+		return nil, errors.New("publicKey is not uncompressed.")
+	}
+	pub := new(ecdsa.PublicKey)
+	pub.Curve = elliptic.P256()
+	pub.X = new(big.Int).SetBytes(q[:32])
+	pub.Y = new(big.Int).SetBytes(q[32:])
+	return pub, nil
+}
+
+func WritePublicKeyToHex(key *ecdsa.PublicKey) string {
+	x := key.X.Bytes()
+	y := key.Y.Bytes()
+	if n := len(x); n < 32 {
+		x = append(zeroByteSlice()[:32-n], x...)
+	}
+	if n := len(y); n < 32 {
+		y = append(zeroByteSlice()[:32-n], y...)
+	}
+	c := []byte{}
+	c = append(c, x...)
+	c = append(c, y...)
+	c = append([]byte{0x04}, c...)
+	return hex.EncodeToString(c)
+}
+
+func zeroByteSlice() []byte {
+	return []byte{
+		0, 0, 0, 0,
+		0, 0, 0, 0,
+		0, 0, 0, 0,
+		0, 0, 0, 0,
+		0, 0, 0, 0,
+		0, 0, 0, 0,
+		0, 0, 0, 0,
+		0, 0, 0, 0,
+	}
 }
