@@ -16,8 +16,10 @@ import (
 )
 
 var (
-	gen    = flag.Bool("keygen", false, "Generate keypair.")
+	derive = flag.Bool("derive", false, "Derive shared secret key.")
+	keygen = flag.Bool("keygen", false, "Generate keypair.")
 	key    = flag.String("key", "", "Private/Public key.")
+	public = flag.String("pub", "", "Remote's side Public key.")
 	sig    = flag.String("signature", "", "Signature.")
 	sign   = flag.Bool("sign", false, "Sign with Private key.")
 	verify = flag.Bool("verify", false, "Verify with Public key.")
@@ -33,8 +35,8 @@ func main() {
 	var pubkeyCurve elliptic.Curve
 
 	pubkeyCurve = elliptic.P256()
-	
-	if *gen {
+
+	if *keygen {
 		if *key != "" {
 			privatekey, err = ReadPrivateKeyFromHex(*key)
 			if err != nil {
@@ -53,6 +55,21 @@ func main() {
 		fmt.Println("Private= " + WritePrivateKeyToHex(privatekey))
 		fmt.Println("Public= " + WritePublicKeyToHex(&pubkey))
 		os.Exit(0)
+	}
+
+	if *derive {
+		private, err := ReadPrivateKeyFromHex(*key)
+		if err != nil {
+			log.Fatal(err)
+		}
+		public, err := ReadPublicKeyFromHex(*public)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		b, _ := public.Curve.ScalarMult(public.X, public.Y, private.D.Bytes())
+		shared := sha256.Sum256(b.Bytes())
+		fmt.Printf("Shared= %x\n", shared)
 	}
 
 	if *sign {
