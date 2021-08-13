@@ -1,5 +1,5 @@
 # ECDSA
-Minimalistic ECDSA Signer written in Go 
+Minimalistic ECDSA/ECDH Tool written in Go 
 ### Usage:
 <pre> -derive
        Derive shared secret key.
