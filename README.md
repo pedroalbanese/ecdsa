@@ -14,7 +14,9 @@ Minimalistic ECDSA Signer written in Go
 ### Examples:
 #### Asymmetric keypair generation:
 <pre>./ecdsa -keygen</pre>
-#### Sign a file:
+#### Shared key negociation (ECDH):
+<pre>./gosttk -derive -key $prvkey -pub $pubkey</pre>
+#### Sign a file (ECDSA):
 <pre>./ecdsa -sign -key $private < file.ext > sign.txt
 sign=$(cat sign.txt)
 ./ecdsa -verify -key $public -signature $sign < file.ext
