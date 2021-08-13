@@ -1,10 +1,14 @@
 # ECDSA Signer
 Minimalistic ECDSA Signer written in Go 
 ### Usage:
-<pre> -key string
+<pre> -derive
+       Derive shared secret key.
+ -key string
        Private/Public key.
  -keygen
        Generate keypair.
+ -pub string
+       Remote's side Public key.
  -sign
        Sign with Private key.
  -signature string
