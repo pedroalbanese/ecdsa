@@ -29,6 +29,12 @@ var (
 func main() {
 	flag.Parse()
 
+	if len(os.Args) < 2 {
+		fmt.Fprintln(os.Stderr, "Usage of", os.Args[0]+":")
+		flag.PrintDefaults()
+		os.Exit(1)
+	}
+
 	var privatekey *ecdsa.PrivateKey
 	var pubkey ecdsa.PublicKey
 	var pub *ecdsa.PublicKey
