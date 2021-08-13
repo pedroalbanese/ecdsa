@@ -1,4 +1,4 @@
-# ECDSA Signer
+# ECDSA
 Minimalistic ECDSA Signer written in Go 
 ### Usage:
 <pre> -derive
