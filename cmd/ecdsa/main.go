@@ -140,7 +140,13 @@ func ReadPrivateKeyFromHex(Dhex string) (*ecdsa.PrivateKey, error) {
 }
 
 func WritePrivateKeyToHex(key *ecdsa.PrivateKey) string {
-	return key.D.Text(16)
+	d := key.D.Bytes()
+	if n := len(d); n < 32 {
+		d = append(zeroByteSlice()[:64-n], d...)
+	}
+	c := []byte{}
+	c = append(c, d...)
+	return hex.EncodeToString(c)
 }
 
 func ReadPublicKeyFromHex(Qhex string) (*ecdsa.PublicKey, error) {
