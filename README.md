@@ -1,4 +1,4 @@
-# ECDSA
+# ECDSA Secp256r1
 Minimalistic ECDSA/ECDH Tool written in Go 
 ### Usage:
 <pre> -derive
